@@ -10,16 +10,15 @@
 	"workers_dev": false,
 	"preview_urls": false,
 	"observability": {
-		"enabled": true
+		"enabled": true,
 	},
 	/**
 	 * Secret environment variables.
 	 * Actual values are set via `wrangler secret put` or the dashboard.
 	 * Declared here so that `wrangler types` generates the correct Env interface.
 	 */
-	"vars": {
-		"PUSHOVER_APP_TOKEN": "",
-		"PUSHOVER_USER_KEY": ""
+	"secrets": {
+		"required": ["PUSHOVER_APP_TOKEN", "PUSHOVER_USER_KEY"],
 	},
 	"queues": {
 		"consumers": [
@@ -27,8 +26,8 @@
 				"queue": "builds-event-subscriptions",
 				"max_batch_size": 10,
 				"max_batch_timeout": 30,
-				"max_retries": 3
-			}
-		]
-	}
+				"max_retries": 3,
+			},
+		],
+	},
 }
