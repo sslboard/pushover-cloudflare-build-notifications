@@ -4,6 +4,10 @@
 
 Get **Cloudflare Workers build notifications on your phone** via [Pushover](https://pushover.net/). This Worker consumes build events from a Cloudflare Queue and forwards them as push notifications with appropriate priority, sound, and direct links to the Cloudflare dashboard.
 
+## Screenshot
+
+![Pushover notification on phone](docs/cloudflare-pushover.jpg)
+
 ## Features
 
 - 🔔 Real-time push notifications for build success, failure, and cancellation
