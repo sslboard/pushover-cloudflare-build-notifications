@@ -71,12 +71,14 @@ export default {
 						"Pushover API error:",
 						result.errors?.join(", ") || "unknown",
 					);
-					return;
+					message.retry();
+					continue;
 				}
 
 				message.ack();
 			} catch (error) {
 				console.error("Error processing message:", error);
+				message.retry();
 			}
 		}
 	},

@@ -14,13 +14,15 @@ import type { CloudflareEvent, BuildStatus } from "./types";
  */
 export function getBuildStatus(event: CloudflareEvent): BuildStatus {
 	const buildOutcome = event.payload?.buildOutcome;
+	const type = event.type || "";
+
 	const isCancelled =
 		buildOutcome === "canceled" ||
 		buildOutcome === "cancelled" ||
-		event.type?.includes("canceled") ||
-		event.type?.includes("cancelled");
-	const isFailed = event.type?.includes("failed") && !isCancelled;
-	const isSucceeded = event.type?.includes("succeeded");
+		type.endsWith(".canceled") ||
+		type.endsWith(".cancelled");
+	const isSucceeded = type.endsWith(".succeeded");
+	const isFailed = type.endsWith(".failed") && !isCancelled;
 
 	return { isSucceeded, isFailed, isCancelled };
 }
@@ -69,11 +71,15 @@ export function getCommitUrl(event: CloudflareEvent): string | null {
 		return null;
 	}
 
+	const owner = encodeURIComponent(meta.providerAccountName);
+	const repo = encodeURIComponent(meta.repoName);
+	const commit = encodeURIComponent(meta.commitHash);
+
 	if (meta.providerType === "github") {
-		return `https://github.com/${meta.providerAccountName}/${meta.repoName}/commit/${meta.commitHash}`;
+		return `https://github.com/${owner}/${repo}/commit/${commit}`;
 	}
 	if (meta.providerType === "gitlab") {
-		return `https://gitlab.com/${meta.providerAccountName}/${meta.repoName}/-/commit/${meta.commitHash}`;
+		return `https://gitlab.com/${owner}/${repo}/-/commit/${commit}`;
 	}
 	return null;
 }
@@ -91,7 +97,11 @@ export function getDashboardUrl(event: CloudflareEvent): string | null {
 
 	if (!accountId || !buildUuid) return null;
 
-	return `https://dash.cloudflare.com/${accountId}/workers/services/view/${workerName}/production/builds/${buildUuid}`;
+	const encodedAccountId = encodeURIComponent(accountId);
+	const encodedWorkerName = encodeURIComponent(workerName);
+	const encodedBuildUuid = encodeURIComponent(buildUuid);
+
+	return `https://dash.cloudflare.com/${encodedAccountId}/workers/services/view/${encodedWorkerName}/production/builds/${encodedBuildUuid}`;
 }
 
 // =============================================================================

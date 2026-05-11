@@ -127,6 +127,8 @@ describe("queue consumer", () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn().mockResolvedValue({
+				ok: true,
+				status: 200,
 				json: () => Promise.resolve({ status: 1 }),
 			}),
 		);
@@ -152,6 +154,8 @@ describe("queue consumer", () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn().mockResolvedValue({
+				ok: true,
+				status: 200,
 				json: () => Promise.resolve({ status: 1 }),
 			}),
 		);
@@ -178,7 +182,7 @@ describe("queue consumer", () => {
 		consoleSpy.mockRestore();
 	});
 
-	it("acks and logs on Pushover API error", async () => {
+	it("retries and logs on Pushover API error", async () => {
 		const event = makeEvent();
 		const messages = [makeMessage(event)];
 		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -186,6 +190,8 @@ describe("queue consumer", () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn().mockResolvedValue({
+				ok: true,
+				status: 200,
 				json: () =>
 					Promise.resolve({ status: 0, errors: ["invalid token"] }),
 			}),
@@ -194,7 +200,7 @@ describe("queue consumer", () => {
 		// @ts-expect-error — simplified env for test
 		await worker.queue?.({ messages }, MOCK_ENV);
 
-		expect(messages[0].ack).toHaveBeenCalled();
+		expect(messages[0].retry).toHaveBeenCalled();
 		expect(consoleSpy).toHaveBeenCalledWith(
 			"Pushover API error:",
 			"invalid token",
@@ -203,7 +209,7 @@ describe("queue consumer", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("acks and logs on unexpected exception", async () => {
+	it("retries and logs on unexpected exception", async () => {
 		const event = makeEvent();
 		const messages = [makeMessage(event)];
 		const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -216,7 +222,7 @@ describe("queue consumer", () => {
 		// @ts-expect-error — simplified env for test
 		await worker.queue?.({ messages }, MOCK_ENV);
 
-		expect(messages[0].ack).toHaveBeenCalled();
+		expect(messages[0].retry).toHaveBeenCalled();
 		expect(consoleSpy).toHaveBeenCalledWith(
 			"Error processing message:",
 			expect.any(Error),
@@ -243,6 +249,8 @@ describe("queue consumer", () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn().mockResolvedValue({
+				ok: true,
+				status: 200,
 				json: () => {
 					callCount++;
 					return Promise.resolve({ status: 1 });

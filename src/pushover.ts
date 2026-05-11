@@ -144,13 +144,35 @@ export function buildPushoverMessage(event: CloudflareEvent, env: Env): Pushover
 export async function sendPushoverNotification(
 	message: PushoverMessage,
 ): Promise<{ ok: boolean; errors?: string[] }> {
+	const params = new URLSearchParams();
+	params.set("token", message.token);
+	params.set("user", message.user);
+	params.set("title", message.title);
+	params.set("message", message.message);
+	if (message.priority !== undefined) params.set("priority", String(message.priority));
+	if (message.sound !== undefined) params.set("sound", message.sound);
+	if (message.url !== undefined) params.set("url", message.url);
+	if (message.url_title !== undefined) params.set("url_title", message.url_title);
+
 	const response = await fetch(PUSHOVER_API_URL, {
 		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(message),
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body: params.toString(),
 	});
 
-	const data: PushoverResponse = await response.json();
+	if (!response.ok) {
+		return {
+			ok: false,
+			errors: [`Pushover returned HTTP ${response.status}`],
+		};
+	}
+
+	let data: PushoverResponse;
+	try {
+		data = await response.json();
+	} catch {
+		return { ok: false, errors: ["invalid JSON response from Pushover"] };
+	}
 
 	if (data.status !== 1) {
 		return { ok: false, errors: data.errors };

@@ -211,6 +211,8 @@ describe("sendPushoverNotification", () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn().mockResolvedValue({
+				ok: true,
+				status: 200,
 				json: () => Promise.resolve({ status: 1, request: "req-123" }),
 			}),
 		);
@@ -231,6 +233,8 @@ describe("sendPushoverNotification", () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn().mockResolvedValue({
+				ok: true,
+				status: 200,
 				json: () =>
 					Promise.resolve({
 						status: 0,
@@ -251,8 +255,52 @@ describe("sendPushoverNotification", () => {
 		vi.restoreAllMocks();
 	});
 
+	it("handles non-OK HTTP status", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 500,
+			}),
+		);
+
+		const result = await sendPushoverNotification({
+			token: "test",
+			user: "test",
+			title: "Test",
+			message: "Hello",
+		});
+
+		expect(result.ok).toBe(false);
+		expect(result.errors).toEqual(["Pushover returned HTTP 500"]);
+		vi.restoreAllMocks();
+	});
+
+	it("handles non-JSON response body", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({
+				ok: true,
+				json: () => Promise.reject(new SyntaxError("Unexpected token")),
+			}),
+		);
+
+		const result = await sendPushoverNotification({
+			token: "test",
+			user: "test",
+			title: "Test",
+			message: "Hello",
+		});
+
+		expect(result.ok).toBe(false);
+		expect(result.errors).toEqual(["invalid JSON response from Pushover"]);
+		vi.restoreAllMocks();
+	});
+
 	it("posts to the correct endpoint", async () => {
 		const fetchSpy = vi.fn().mockResolvedValue({
+			ok: true,
+			status: 200,
 			json: () => Promise.resolve({ status: 1 }),
 		});
 		vi.stubGlobal("fetch", fetchSpy);
@@ -270,8 +318,8 @@ describe("sendPushoverNotification", () => {
 			"https://api.pushover.net/1/messages.json",
 			{
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(message),
+				headers: { "Content-Type": "application/x-www-form-urlencoded" },
+				body: expect.stringContaining("token=t"),
 			},
 		);
 

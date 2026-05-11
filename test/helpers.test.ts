@@ -71,6 +71,24 @@ describe("getBuildStatus", () => {
 		expect(status).toEqual({ isSucceeded: false, isFailed: true, isCancelled: false });
 	});
 
+	it("does not false-positive on substring matches", () => {
+		const status = getBuildStatus(
+			makeEvent({
+				type: "cf.workersBuilds.worker.build.prefailed",
+				payload: { ...makeEvent().payload, buildOutcome: null, status: "unknown" },
+			}),
+		);
+		expect(status).toEqual({ isSucceeded: false, isFailed: false, isCancelled: false });
+
+		const status2 = getBuildStatus(
+			makeEvent({
+				type: "cf.workersBuilds.worker.build.recanceled",
+				payload: { ...makeEvent().payload, buildOutcome: null, status: "unknown" },
+			}),
+		);
+		expect(status2).toEqual({ isSucceeded: false, isFailed: false, isCancelled: false });
+	});
+
 	it("detects cancelled event (single L)", () => {
 		const event = makeEvent({
 			type: "cf.workersBuilds.worker.build.failed",
@@ -166,6 +184,23 @@ describe("getCommitUrl", () => {
 		);
 	});
 
+	it("URL-encodes path components", () => {
+		const event = makeEvent({
+			payload: {
+				...makeEvent().payload,
+				buildTriggerMetadata: {
+					...makeEvent().payload.buildTriggerMetadata!,
+					providerAccountName: "user name",
+					repoName: "repo#name",
+					commitHash: "abc123/def456",
+				},
+			},
+		});
+		expect(getCommitUrl(event)).toBe(
+			"https://github.com/user%20name/repo%23name/commit/abc123%2Fdef456",
+		);
+	});
+
 	it("generates GitLab commit URL", () => {
 		const event = makeEvent({
 			payload: {
@@ -211,6 +246,17 @@ describe("getDashboardUrl", () => {
 		const event = makeEvent();
 		expect(getDashboardUrl(event)).toBe(
 			"https://dash.cloudflare.com/acc-1234/workers/services/view/my-worker/production/builds/build-1234-5678-90ab",
+		);
+	});
+
+	it("URL-encodes path components", () => {
+		const event = makeEvent({
+			source: { type: "workersBuilds.worker", workerName: "my worker/name" },
+			metadata: { ...makeEvent().metadata, accountId: "acc 1234" },
+			payload: { ...makeEvent().payload, buildUuid: "build#1" },
+		});
+		expect(getDashboardUrl(event)).toBe(
+			"https://dash.cloudflare.com/acc%201234/workers/services/view/my%20worker%2Fname/production/builds/build%231",
 		);
 	});
 
