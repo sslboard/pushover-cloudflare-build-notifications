@@ -1,6 +1,7 @@
 {
 	"name": "pushover-cloudflare-build-notifications",
 	"description": "Get Cloudflare Workers build notifications on your phone via Pushover.",
+	"type": "module",
 	"private": true,
 	"scripts": {
 		"dev": "wrangler dev",
